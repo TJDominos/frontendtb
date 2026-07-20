@@ -3,7 +3,7 @@ import React, { useEffect } from 'react';
 import { 
   Activity, Wallet, RefreshCw, TrendingUp, TrendingDown, 
   Settings, Users, Clock, Calendar, CheckSquare, 
-  Square, Trash2, Plus, Code, Lock, Search, FileText, ChevronLeft, ChevronRight, Server, Archive
+  Square, Trash2, Plus, Code, Lock, Search, FileText, Key, Eye, EyeOff, Shield, ChevronLeft, ChevronRight, Server, Archive
 } from 'lucide-react';
 import { useStore } from './store';
 
@@ -348,6 +348,13 @@ export default function App() {
     return () => clearInterval(interval);
   }, [workerUrl, cfAccessClientId, cfAccessClientSecret, actions]);
 
+    const [isAdminModalOpen, setIsAdminModalOpen] = React.useState(false);
+  const [adminTab, setAdminTab] = React.useState('password'); // password, import, list
+  const [adminPasswordForm, setAdminPasswordForm] = React.useState({ old: '', new1: '', new2: '' });
+  const [adminImportForm, setAdminImportForm] = React.useState({ key: '', password: '', recoveryPhrase: Array(12).fill(''), isRecovery: false, wordCount: 12 });
+  const [importedKeys, setImportedKeys] = React.useState([]);
+  const [adminMsg, setAdminMsg] = React.useState({ type: '', text: '' });
+
   const [isSimulationModalOpen, setIsSimulationModalOpen] = React.useState(false);
 
   const handleRefresh = () => {
@@ -649,46 +656,7 @@ export default function App() {
     <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
       <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 space-y-5 shadow-sm h-fit">
         
-        <h3 className="font-semibold flex items-center gap-2 border-b border-slate-800 pb-4 text-lg"><Server size={18}/> System Setup</h3>
-        <div className="space-y-4">
-          <div>
-            <ComboInput 
-              value={workerUrl}
-              onChange={actions.setWorkerUrl}
-              onSave={actions.saveWorkerUrl}
-              onDelete={actions.deleteSavedItem}
-              savedItems={savedWorkerUrls}
-              placeholder="e.g. https://tradeengine.tjluckydominos.workers.dev"
-              storageKey="savedWorkerUrls"
-              labelText="Cloudflare Worker API URL"
-            />
-            <p className="text-[10px] text-slate-500 mt-1">If provided, this dashboard acts as a frontend to your deployed Worker.</p>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-400 mb-1">CF Access Client ID</label>
-              <input 
-                type="text" 
-                className="w-full bg-slate-950 border border-slate-700 rounded-md px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-emerald-500 focus:bg-slate-900 transition-colors"
-                value={cfAccessClientId || ''}
-                onChange={(e) => actions.setCfAccessClientId(e.target.value)}
-                placeholder="Optional"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-400 mb-1">CF Access Client Secret</label>
-              <input 
-                type="password" 
-                className="w-full bg-slate-950 border border-slate-700 rounded-md px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-emerald-500 focus:bg-slate-900 transition-colors"
-                value={cfAccessClientSecret || ''}
-                onChange={(e) => actions.setCfAccessClientSecret(e.target.value)}
-                placeholder="Optional"
-              />
-            </div>
-          </div>
-        </div>
-
-        <h3 className="font-semibold flex items-center gap-2 border-b border-slate-800 pt-4 pb-4 text-lg"><Settings size={18}/> Trading Parameters</h3>
+        <h3 className="font-semibold flex items-center gap-2 border-b border-slate-800 pb-4 text-lg"><Settings size={18}/> Trading Parameters</h3>
         
         <div className="space-y-4">
           <div>
@@ -710,19 +678,7 @@ export default function App() {
             </div>
           </div>
           
-          <div>
-            <ComboInput 
-              value={secretName}
-              onChange={actions.setSecretName}
-              onSave={actions.saveSecretName}
-              onDelete={actions.deleteSavedItem}
-              savedItems={store.savedSecretNames}
-              placeholder={engineState?.settings?.secretLoaded ? "Enter to replace Key / Env Var" : "Paste Base58, JSON Array, or ENV Name"} 
-              storageKey="savedSecretNames"
-              labelText="Secret or Env Var Name"
-              statusText={engineState?.settings?.secretLoaded ? `Loaded (${engineState?.settings?.secretName || 'ENV/Key'})` : 'Not Loaded'}
-            />
-          </div>
+
 
           <div className="pt-2">
             <SettingInput
@@ -909,6 +865,11 @@ export default function App() {
           <button onClick={() => alert("Trading Engine Started")} className="flex items-center gap-2 px-4 h-10 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md transition-colors text-sm font-medium shadow-sm cursor-pointer">
             <Activity size={16} /> Start Trading
           </button>
+          
+          <button onClick={() => setIsAdminModalOpen(true)} className="flex items-center gap-2 px-4 h-10 bg-slate-800 hover:bg-slate-700 text-white rounded-md transition-colors text-sm font-medium shadow-sm border border-slate-700 cursor-pointer">
+            <Shield size={16} className="text-amber-500" /> Admin
+          </button>
+
           <button onClick={handleRefresh} className="flex items-center gap-2 px-4 h-10 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors text-sm font-medium shadow-sm cursor-pointer">
             <RefreshCw size={16} /> Force Sync
           </button>
@@ -930,6 +891,199 @@ export default function App() {
         {activeTab === 'setup' && renderSetup()}
         {activeTab === 'setups' && renderSetups()}
       </div>
+
+      
+      {isAdminModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-slate-900 border border-slate-700 rounded-xl shadow-2xl w-full max-w-md flex flex-col overflow-hidden">
+            <div className="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-900/80">
+              <h3 className="font-semibold text-lg flex items-center gap-2">
+                <Shield size={18} className="text-amber-500" />
+                Admin Panel
+              </h3>
+              <button 
+                onClick={() => setIsAdminModalOpen(false)}
+                className="text-slate-400 hover:text-white p-1 rounded transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div className="flex border-b border-slate-800 bg-slate-900/50">
+               <button onClick={() => { setAdminTab('password'); setAdminMsg({type:'', text:''}); }} className={`flex-1 py-3 text-sm font-medium ${adminTab === 'password' ? 'text-amber-400 border-b-2 border-amber-500' : 'text-slate-400 hover:text-slate-200'}`}>Password</button>
+               <button onClick={() => { setAdminTab('import'); setAdminMsg({type:'', text:''}); }} className={`flex-1 py-3 text-sm font-medium ${adminTab === 'import' ? 'text-amber-400 border-b-2 border-amber-500' : 'text-slate-400 hover:text-slate-200'}`}>Import Key</button>
+               <button onClick={() => { setAdminTab('list'); setAdminMsg({type:'', text:''}); }} className={`flex-1 py-3 text-sm font-medium ${adminTab === 'list' ? 'text-amber-400 border-b-2 border-amber-500' : 'text-slate-400 hover:text-slate-200'}`}>Manage</button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              {adminMsg.text && (
+                 <div className={`p-3 rounded text-sm ${adminMsg.type === 'error' ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'}`}>
+                   {adminMsg.text}
+                 </div>
+              )}
+
+              {adminTab === 'password' && (
+                <div className="space-y-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-slate-400 uppercase">Old Password</label>
+                    <input type="password" value={adminPasswordForm.old} onChange={e => setAdminPasswordForm({...adminPasswordForm, old: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-sm focus:border-amber-500 outline-none" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-slate-400 uppercase">New Password</label>
+                    <input type="password" value={adminPasswordForm.new1} onChange={e => setAdminPasswordForm({...adminPasswordForm, new1: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-sm focus:border-amber-500 outline-none" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-slate-400 uppercase">Confirm Password</label>
+                    <input type="password" value={adminPasswordForm.new2} onChange={e => setAdminPasswordForm({...adminPasswordForm, new2: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-sm focus:border-amber-500 outline-none" />
+                  </div>
+                  <button 
+                     onClick={async () => {
+                       if (adminPasswordForm.new1 !== adminPasswordForm.new2) { setAdminMsg({type: 'error', text: 'Passwords do not match'}); return; }
+                       if (adminPasswordForm.new1.length < 6) { setAdminMsg({type: 'error', text: 'Password too short'}); return; }
+                       setAdminMsg({type:'', text:'Updating...'});
+                       try {
+                         const url = store.workerUrl ? `${store.workerUrl}/api/admin/password` : '/api/admin/password';
+                         const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'CF-Access-Client-Id': store.cfAccessClientId, 'CF-Access-Client-Secret': store.cfAccessClientSecret }, body: JSON.stringify({ oldPassword: adminPasswordForm.old, newPassword: adminPasswordForm.new1 }) });
+                         const data = await res.json();
+                         if (data.error) setAdminMsg({type: 'error', text: data.error});
+                         else { setAdminMsg({type: 'success', text: 'Password updated successfully'}); setAdminPasswordForm({old: '', new1: '', new2: ''}); }
+                       } catch(e) { setAdminMsg({type: 'error', text: 'Network error'}); }
+                     }}
+                     className="w-full bg-amber-600 hover:bg-amber-700 text-white font-medium py-2.5 rounded transition-colors mt-2">
+                    Change Password
+                  </button>
+                </div>
+              )}
+
+              {adminTab === 'import' && (
+                <div className="space-y-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-slate-400 uppercase">Admin Password</label>
+                    <input type="password" value={adminImportForm.password} onChange={e => setAdminImportForm({...adminImportForm, password: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-sm focus:border-amber-500 outline-none" />
+                  </div>
+                  
+                  <div className="flex border border-slate-800 bg-slate-950 rounded-md overflow-hidden">
+                     <button onClick={() => setAdminImportForm({...adminImportForm, isRecovery: false})} className={`flex-1 py-1.5 text-xs font-medium ${!adminImportForm.isRecovery ? 'bg-amber-600 text-white' : 'text-slate-400 hover:text-slate-200'}`}>Private Key</button>
+                     <button onClick={() => setAdminImportForm({...adminImportForm, isRecovery: true})} className={`flex-1 py-1.5 text-xs font-medium ${adminImportForm.isRecovery ? 'bg-amber-600 text-white' : 'text-slate-400 hover:text-slate-200'}`}>Recovery Phrase</button>
+                  </div>
+
+                  {!adminImportForm.isRecovery ? (
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-slate-400 uppercase flex justify-between">
+                         Private Key (Phantom/Solana)
+                      </label>
+                      <input type="password" value={adminImportForm.key} onChange={e => setAdminImportForm({...adminImportForm, key: e.target.value})} placeholder="Base58 Private Key" className="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-sm focus:border-amber-500 outline-none font-mono" />
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="text-center space-y-1">
+                        <h4 className="font-semibold">Recovery Phrase</h4>
+                        <p className="text-xs text-slate-400">Import an existing wallet with your 12 or 24-word recovery phrase.</p>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2">
+                        {adminImportForm.recoveryPhrase.slice(0, adminImportForm.wordCount).map((word, i) => (
+                          <div key={i} className="relative">
+                            <span className="absolute left-2.5 top-2 text-xs text-slate-500">{i + 1}.</span>
+                            <input 
+                              type="text" 
+                              value={word} 
+                              onChange={e => {
+                                const newPhrase = [...adminImportForm.recoveryPhrase];
+                                newPhrase[i] = e.target.value.trim().toLowerCase();
+                                setAdminImportForm({...adminImportForm, recoveryPhrase: newPhrase});
+                              }}
+                              className="w-full bg-slate-900 border border-slate-800 rounded pl-7 pr-2 py-1.5 text-sm focus:border-amber-500 outline-none text-slate-200"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                      <button 
+                        onClick={() => {
+                           const newCount = adminImportForm.wordCount === 12 ? 24 : 12;
+                           const newPhrase = Array(24).fill('');
+                           adminImportForm.recoveryPhrase.forEach((w, i) => newPhrase[i] = w);
+                           setAdminImportForm({...adminImportForm, wordCount: newCount, recoveryPhrase: newPhrase});
+                        }}
+                        className="w-full text-sm text-slate-400 hover:text-slate-200 py-1"
+                      >
+                        I have a {adminImportForm.wordCount === 12 ? '24' : '12'}-word recovery phrase
+                      </button>
+                    </div>
+                  )}
+
+                  <div className="text-[10px] text-slate-500 leading-tight">Keys are encrypted on the backend using XOR masking with your admin password and saved in the settings table. This account will be added as an internal engine wallet.</div>
+                  <button 
+                     onClick={async () => {
+                       const isRecovery = adminImportForm.isRecovery;
+                       const phrase = adminImportForm.recoveryPhrase.slice(0, adminImportForm.wordCount).join(' ');
+                       if (!adminImportForm.password || (!isRecovery && !adminImportForm.key) || (isRecovery && phrase.split(' ').filter(w=>w).length !== adminImportForm.wordCount)) { 
+                         setAdminMsg({type: 'error', text: 'Please fill all fields'}); return; 
+                       }
+                       setAdminMsg({type:'', text:'Importing...'});
+                       try {
+                         const url = store.workerUrl ? `${store.workerUrl}/api/admin/private-keys` : '/api/admin/private-keys';
+                         const payload = isRecovery ? { adminPassword: adminImportForm.password, recoveryPhrase: phrase } : { adminPassword: adminImportForm.password, privateKey: adminImportForm.key };
+                         const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'CF-Access-Client-Id': store.cfAccessClientId, 'CF-Access-Client-Secret': store.cfAccessClientSecret }, body: JSON.stringify(payload) });
+                         const data = await res.json();
+                         if (data.error) setAdminMsg({type: 'error', text: data.error});
+                         else { setAdminMsg({type: 'success', text: `Imported successfully: ${data.address}`}); setAdminImportForm({...adminImportForm, key: '', recoveryPhrase: Array(24).fill('')}); store.actions.fetchState(); }
+                       } catch(e) { setAdminMsg({type: 'error', text: 'Network error'}); }
+                     }}
+                     className="w-full bg-amber-600 hover:bg-amber-700 text-white font-medium py-2.5 rounded transition-colors mt-2 flex items-center justify-center gap-2">
+                    <Key size={16} /> Import Wallet
+                  </button>
+                </div>
+              )}
+
+              {adminTab === 'list' && (
+                <div className="space-y-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-slate-400 uppercase">Admin Password (Required for deletion)</label>
+                    <input type="password" value={adminImportForm.password} onChange={e => setAdminImportForm({...adminImportForm, password: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-sm focus:border-amber-500 outline-none" />
+                  </div>
+                  <div className="mt-4 border border-slate-800 rounded-md overflow-hidden bg-slate-950/50">
+                    <div className="p-3 border-b border-slate-800 text-xs font-semibold text-slate-400 bg-slate-900/50 flex justify-between">
+                      <span>Imported Wallets</span>
+                      <span>{engineState.internalAccs.filter(acc => acc.tag === 'Imported Wallet').length}</span>
+                    </div>
+                    <div className="max-h-48 overflow-y-auto p-2 space-y-2">
+                       {engineState.internalAccs.filter(acc => acc.tag === 'Imported Wallet').length === 0 && (
+                          <div className="text-slate-500 text-xs text-center py-4">No imported wallets found.</div>
+                       )}
+                       {engineState.internalAccs.filter(acc => acc.tag === 'Imported Wallet').map((acc: any, index: number) => (
+                         <div key={acc.address} className="flex items-center justify-between bg-slate-900 border border-slate-800 p-2 rounded">
+                           <div className="flex items-center gap-2">
+                             <span className="text-slate-500 font-mono text-xs w-4">{index + 1}.</span>
+                             <div className="font-mono text-xs text-slate-300 truncate w-40" title={acc.address}>{acc.address.substring(0,16)}...</div>
+                           </div>
+                           <button 
+                             onClick={async () => {
+                                if (!adminImportForm.password) { setAdminMsg({type: 'error', text: 'Enter Admin Password first'}); return; }
+                                if (!confirm('Are you sure you want to delete this private key?')) return;
+                                if (!confirm('Double Confirm: This action cannot be undone. Delete?')) return;
+                                try {
+                                  const url = store.workerUrl ? `${store.workerUrl}/api/admin/private-keys/${acc.address}` : `/api/admin/private-keys/${acc.address}`;
+                                  const res = await fetch(url, { method: 'DELETE', headers: { 'Authorization': adminImportForm.password, 'CF-Access-Client-Id': store.cfAccessClientId, 'CF-Access-Client-Secret': store.cfAccessClientSecret } });
+                                  const data = await res.json();
+                                  if (data.error) setAdminMsg({type: 'error', text: data.error});
+                                  else { setAdminMsg({type: 'success', text: 'Deleted successfully'}); store.actions.fetchState(); }
+                                } catch(e) { setAdminMsg({type: 'error', text: 'Network error'}); }
+                             }}
+                             className="text-rose-400 hover:bg-rose-500/20 p-1.5 bg-rose-500/10 rounded transition-colors flex items-center gap-1 text-xs font-semibold"
+                             title="Delete Key"
+                           >
+                             <Trash2 size={14} /> Delete
+                           </button>
+                         </div>
+                       ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {isSimulationModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">

@@ -11,7 +11,9 @@
   "dependencies": {
     "@solana/web3.js": "^1.91.1",
     "@tsndr/cloudflare-worker-jwt": "^3.2.1",
-    "bs58": "^6.0.0"
+    "bip39": "^3.1.0",
+    "bs58": "^6.0.0",
+    "ed25519-hd-key": "^2.0.0"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20240405.0",
