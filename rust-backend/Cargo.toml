@@ -1,0 +1,17 @@
+[package]
+name = "wlt-trading-engine"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+tokio = { version = "1", features = ["full", "macros"] }
+warp = "0.3"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+solana-client = "1.16"
+solana-sdk = "1.16"
+dotenv = "0.15"
+log = "0.4"
+env_logger = "0.10"
+futures = "0.3"
+rand = "0.8"

@@ -1,0 +1,13 @@
+name = "tradeengine"
+main = "src/index.ts"
+compatibility_date = "2024-04-05"
+node_compat = true
+
+[vars]
+RPC_URL = "https://api.mainnet-beta.solana.com"
+MY_VAR = "my-value"
+
+[[d1_databases]]
+binding = "TRADINGBOT_DB"
+database_name = "tradingbot"
+database_id = "b93f4c50-a519-422c-9b31-15244ef3184f"
